@@ -1,0 +1,50 @@
+.TH HANDY 1
+.SH NAME
+handy \- Handycipher
+.ad l
+.nh
+.SH SYNOPSIS
+.HP 6
+.B handy
+[\fB\-Vde\fR]
+\fB\-k\fR\ \fIfile\fR
+[\fB\-o\fR\ \fIfile\fR]
+[\fB\-\-core\fR]
+[\fB\-\-help\fR]
+[\fB\-\-trace\fR]
+[\fIfile\fR]
+.SH DESCRIPTION
+.B handy
+encrypts files with the low-tech randomized symmetric-key Handycipher.
+
+Note that, for convenience, spaces characters are ignored from input.
+.SH OPTIONS
+.TP
+\fB\-d\fB, \fB\-\-decrypt\fR
+Decrypt the input file.
+If no input file is given, decrypt standard input.
+.TP
+\fB\-e\fB, \fB\-\-encrypt\fR
+Encrypt the input file (default).
+If no input file is given, encrypt standard input.
+.TP
+\fB\-k\fIfile\fR, \fB\-\-key\fR=\fIfile\fR
+Set the key file.
+.TP
+\fB\-o\fIfile\fR, \fB\-\-output\fR=\fIfile\fR
+Set the output file. By default output goes to standard output.
+.TP
+\fB\-\-core\fR
+Use the core cipher: do not salt output with null characters.
+.TP
+\fB\-\-trace\fR
+Print a trace of the encrypting/decrypting process on standard output.
+.TP
+\fB\-\-help\fR
+Print a synopsis of the command line interface.
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version information.
+.SH "SEE ALSO"
+The specification document by Bruce Kallick:
+\fBHandycipher: a Low-tech, Randomized, Symmetric-key Cryptosystem\fR.
