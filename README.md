@@ -1,10 +1,10 @@
-# handy: the low-tech randomized symmetric-key Handycipher
+# handy: A Low-tech Randomized Symmetric-key Cipher
 
-This program encodes files with the Handy cipher. See the specification
-document by Bruce Kallick:
-*Handycipher: a Low-tech, Randomized, Symmetric-key Cryptosystem*.
+This program encodes files with the Handy cipher.
 
-Note that, for convenience, spaces characters are ignored from the input.
+Read the specification document by Bruce Kallick:
+[Handycipher: a Low-tech, Randomized, Symmetric-key
+Cryptosystem](https://eprint.iacr.org/2014/257.pdf)
 
 See the included man page for option details.
 
@@ -46,4 +46,22 @@ This will install both the compiled binary and a manual page under `PREFIX`.
     MTxK                             MK    R2  00101  5 E
     iJDQjsufvG                       iDs   C4  10011 19 S
     qSYL                             qY    D3  10100 20 T
+
+# Implementation Notes
+
+For convenience, spaces (C Library `isspace()`) are ignored from the input.
+
+The random source is a version of [PCG](http://www.pcg-random.org).
+To debug the program, you may want to use fixed seeds for the generator
+(see src/cipher.c:init_cipher() and src/pcgrandom.h to use `pcg_seed`
+instead of `pcg_entropy`).
+
+To randomly loop through all the permutations of a set, we rank each
+permutation using the algorithm presented in
+[Ranking and unranking permutations in linear
+time](https://webhome.cs.uvic.ca/~ruskey/Publications/RankPerm/RankPerm.html)
+by Wendy Myrvold and Frank Ruskey.
+
+To shuffle the elements of a set, we use the D. Knuth implementation of the
+[Fisher-Yates algorithm](https://en.wikipedia.org/wiki/Fisher–Yates_shuffle).
 

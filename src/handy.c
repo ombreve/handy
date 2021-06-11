@@ -127,7 +127,7 @@ main(int argc, char **argv)
     infile = optparse_arg(options);
 
     if (!keyfile) {
-        fprintf(stderr, "no key file specified\n");
+        fprintf(stderr, "missing key file\n");
         fprintf(stderr, "%s\n", docs_usage);
         exit(EXIT_FAILURE);
     }
