@@ -164,7 +164,7 @@ shuffle(char *set, int n, struct pcgstate *rnd)
     int i, j;
     char tmp;
 
-    for (i = n - 1; i >= 1; i--) {
+    for (i = n - 1; i > 0; i--) {
         j = (int) pcg_boundedrand(rnd, i + 1);
         if (i != j) {
             tmp = set[i];
@@ -535,6 +535,9 @@ encode(struct handy *cipher, int c, int next, char *result)
     return len;
 }
 
+/* Output to stream TO a formatted encryption of stream FROM.
+ * The CORE flag is set for core encryption algorithm only.
+ * The TRACE flag traces the encoding process on stdout. */
 void
 handy_encrypt(FILE *from, FILE *to, char *key, int core, int trace)
 {
@@ -674,6 +677,9 @@ end_sequence:
     return used;
 }
 
+/* Output to stream TO a decryption of stream FROM.
+ * The CORE flag is set for core decryption algorithm only.
+ * The TRACE flag traces the decoding process on stdout. */
 void
 handy_decrypt(FILE *from, FILE *to, char *key, int core, int trace)
 {
@@ -707,10 +713,12 @@ handy_decrypt(FILE *from, FILE *to, char *key, int core, int trace)
         putchar('\n'); /* ensure final '\n' on stdout */
 }
 
+/* Generate a KEY from a PASSWORD string. */
 void
 handy_keygen(char *password, char *key)
 {
-    static char *keyset = "ABCDEFGHIJKLMNOPQRSTUVWXYabcdefghijklmnopqrstuvwxy^";
+    static const char *keyset =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYabcdefghijklmnopqrstuvwxy^";
 
     struct pcgstate random[1];
     uint8_t hash[32];

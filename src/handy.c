@@ -28,7 +28,7 @@ fatal(const char *fmt, ...)
     va_list ap;
 
     if (cleanup_fd == stdout)
-        putchar('\n'); /* restore a decent prompt */
+        putchar('\n'); /* try forcing a decent prompt */
     else if (cleanup_fd)
        fclose(cleanup_fd);
     if (cleanup_file)
@@ -60,7 +60,7 @@ static void
 get_password_dumb(char *buf, size_t len, char *prompt)
 {
     size_t passlen;
-    warning("reading key from stdin with echo");
+    warning("reading password from stdin with echo");
     fputs(prompt, stderr);
     fflush(stderr);
     if (!fgets(buf, len, stdin))
@@ -70,7 +70,7 @@ get_password_dumb(char *buf, size_t len, char *prompt)
         buf[passlen - 1] = 0;
 }
 
-/* Read a password from terminal. */
+/* Read a password string from terminal. */
 static void
 get_password(char *buf, size_t len, char *prompt)
 {
@@ -84,7 +84,7 @@ get_password(char *buf, size_t len, char *prompt)
         get_password_dumb(buf, len, prompt);
     else {
         if (write(tty, prompt, strlen(prompt)) == -1)
-            fatal("error asking for key");
+            fatal("error writing password prompt");
         tcgetattr(tty, &old);
         new = old;
         new.c_lflag &= ~ECHO;
@@ -96,14 +96,14 @@ get_password(char *buf, size_t len, char *prompt)
         buf[i] = 0;
         tcsetattr(tty, TCSANOW, &old);
         if (write(tty, &newline, 1) == -1)
-            fatal("error asking for passphrase");
+            fatal("error asking for password");
         close(tty);
         if (errno)
             fatal("could not read password from /dev/tty");
     }
 }
 /* Load the KEY stored in file KEYFILE. If KEYFILE is null, read a password
- * from terminal and generate a key from it. */
+ * from terminal and generate a key. */
 static void
 load_key(char *keyfile, char *key)
 {
