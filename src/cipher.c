@@ -13,6 +13,9 @@
 #define PCGRANDOM_API static
 #include "pcgrandom.h"
 
+#define SHA256_IMPLEMENTATION
+#include "sha256.h"
+
 extern void fatal(const char *fmt, ...);
 extern void warning(const char *fmt, ...);
 
@@ -45,8 +48,7 @@ struct handy {
     char subkey[31];
     char code_mat[25];
     char null_mat[25];
-    struct pcgstate random;
-    int trace;
+    struct pcgstate random[1];
     int core;
 
     /* Context needed to encode a character */
@@ -162,7 +164,7 @@ shuffle(char *set, int n, struct pcgstate *rnd)
     int i, j;
     char tmp;
 
-    for (i = n - 2; i >= 1; i--) {
+    for (i = n - 1; i >= 1; i--) {
         j = (int) pcg_boundedrand(rnd, i + 1);
         if (i != j) {
             tmp = set[i];
@@ -178,10 +180,6 @@ trace_cipher(struct handy *cipher)
 {
     int i, j;
 
-    printf("Key: ");
-    for (i = 0; i < sizeof(Key); i++)
-        putchar(Key[i]);
-    putchar('\n');
     printf("Subkey: ");
     for (i = 0; i < sizeof(Subkey); i++)
         putchar(Subkey[i]);
@@ -232,6 +230,12 @@ init_cipher(struct handy *cipher, char *key, int core)
     char *p;
     int c, i, j;
 
+    if (handy_trace) {
+        printf("Key: ");
+        for (i = 0; i < 51; i++)
+            putchar(key[i]);
+        putchar('\n');
+    }
     memset(Key, 0, sizeof(Key));
     for (i = 0; i < sizeof(Key); i++) {
         c = key[i];
@@ -288,7 +292,7 @@ init_cipher(struct handy *cipher, char *key, int core)
         Subkey[j++] = c;
     }
 
-    if (!pcg_entropy(&Random))
+    if (!pcg_entropy(Random))
         fatal("cannot initialize random source");
 
     Prev_code = 0;
@@ -360,9 +364,9 @@ set_salt(struct handy *cipher, char *result, char *buf, int len)
     int i, l;
 
     for (i = 0, l = 0; i < len; i++) {
-        while (pcg_boundedrand(&Random, 2)
+        while (pcg_boundedrand(Random, 2)
                 && l < MAX_ENCODED_LEN - len + i)
-            result[l++] = Null_mat[pcg_boundedrand(&Random, 25)];
+            result[l++] = Null_mat[pcg_boundedrand(Random, 25)];
         result[l++] = buf[i];
     }
     if (i < len) {
@@ -387,11 +391,11 @@ set_noise(struct handy *cipher, char *result, char *buf, int len)
     result[0] = buf[0];
     for (i = 1, l = 1; i < len; i++) {
         result[l++] = buf[i];
-        if (pcg_boundedrand(&Random, 2)) {
+        if (pcg_boundedrand(Random, 2)) {
             for (j = 0; j < sizeof(Code_mat); j++)
                 if (Code_mat[j] == buf[i])
                     break;
-            k = (int) pcg_boundedrand(&Random, 8);
+            k = (int) pcg_boundedrand(Random, 8);
             result[l++] = Code_mat[knightjumps[j][k]];
         }
     }
@@ -423,7 +427,7 @@ encode_char(struct handy *cipher, int c, int code, int next_code, char *result)
     Parity = 1 - Parity;
 
     /* DIR loops on all directions in random order */
-    shuffle(lines, 20, &Random);
+    shuffle(lines, 20, Random);
     for (i = 0; i < sizeof(lines); i++) {
         dir = lines[i];
         if ((pow2(code) && dir >= 5)
@@ -447,7 +451,7 @@ encode_char(struct handy *cipher, int c, int code, int next_code, char *result)
          * by Wendy Myrvold and Frank Ruskey */
         for (j = 0; j < r; j++)
             ranks[j] = j;
-        shuffle(ranks, r, &Random);
+        shuffle(ranks, r, Random);
         for (j = 0; j < r; j++) {
             for (k = 0; k < len; k++)
                 permuted[k] = raw[k];
@@ -536,13 +540,13 @@ handy_encrypt(FILE *from, FILE *to, char *key, int core, int trace)
 {
     int current, next, len;
     char result[2*MAX_ENCODED_LEN];
-    struct handy cipher;
+    struct handy cipher[1];
 
     int start = 0, end = 0, last = 0;
     char input[CHUNK_SIZE];
 
     handy_trace = trace;
-    init_cipher(&cipher, key, core);
+    init_cipher(cipher, key, core);
 
     for (;;) {
         /* Fill input buffer with at least 2 characters */
@@ -558,7 +562,7 @@ handy_encrypt(FILE *from, FILE *to, char *key, int core, int trace)
         current = input[start++];
         next = end - start == 0 ? EOF : input[start];
 
-        len = encode(&cipher, current, next, result);
+        len = encode(cipher, current, next, result);
 
         if (to != stdout || !handy_trace) /* do not mix trace and output */
             foutput(result, len, to);
@@ -673,14 +677,14 @@ end_sequence:
 void
 handy_decrypt(FILE *from, FILE *to, char *key, int core, int trace)
 {
-    struct handy cipher;
+    struct handy cipher[1];
     int c;
 
     char input[CHUNK_SIZE];
     int start = 0, end = 0, last = 0;
 
     handy_trace = trace;
-    init_cipher(&cipher, key, core);
+    init_cipher(cipher, key, core);
 
     for (;;) {
         /* Fill input buffer with at least 2 sequences if possible */
@@ -694,12 +698,31 @@ handy_decrypt(FILE *from, FILE *to, char *key, int core, int trace)
             break;
 
         /* Decode next char */
-        start += decode(&cipher, input + start, end - start, &c);
+        start += decode(cipher, input + start, end - start, &c);
         if (to != stdout || !handy_trace)
             putc(c, to);
     }
 
     if (to == stdout && !handy_trace)
-        putc('\n', to); /* ensure final '\n' on stdout */
+        putchar('\n'); /* ensure final '\n' on stdout */
 }
 
+void
+handy_keygen(char *password, char *key)
+{
+    static char *keyset = "ABCDEFGHIJKLMNOPQRSTUVWXYabcdefghijklmnopqrstuvwxy^";
+
+    struct pcgstate random[1];
+    uint8_t hash[32];
+    SHA256_CTX sha[1];
+
+    sha256_init(sha);
+    sha256_update(sha, (uint8_t *) password, strlen(password));
+    sha256_final(sha, hash);
+
+    pcg_seed(random, *((uint64_t *) hash),
+                     *((uint64_t *) (hash + 8)) & 0x7FFFFFFFFFFFFFFF);
+
+    memcpy(key, keyset, 51);
+    shuffle(key, 51, random);
+}

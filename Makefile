@@ -13,7 +13,7 @@ handy: $(objects)
 	$(CC) $(LDFLAGS) -o $@ $(objects) $(LDLIBS)
 
 src/handy.o: config.h src/docs.h src/optparse.h
-src/cipher.o: src/pcgrandom.h
+src/cipher.o: src/pcgrandom.h src/sha256.h
 
 clean:
 	rm -f handy $(objects)

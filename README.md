@@ -47,7 +47,7 @@ This will install both the compiled binary and a manual page under `PREFIX`.
     iJDQjsufvG                       iDs   C4  10011 19 S
     qSYL                             qY    D3  10100 20 T
 
-# Implementation Notes
+# Implementation notes
 
 For convenience, spaces (C Library `isspace()`) are ignored from the input.
 
@@ -62,6 +62,10 @@ permutation using the algorithm presented in
 time](https://webhome.cs.uvic.ca/~ruskey/Publications/RankPerm/RankPerm.html)
 by Wendy Myrvold and Frank Ruskey.
 
-To shuffle the elements of a set, we use the D. Knuth implementation of the
+To shuffle the elements of a set, we use D. Knuth's implementation of the
 [Fisher-Yates algorithm](https://en.wikipedia.org/wiki/Fisher–Yates_shuffle).
+
+If no key file is given, a unique key is derived from a passphrase:
+the SHA256 hash of the passphrase is used as seed for the PCG source and
+the 51 characters A-Ya-y^ are shuffled into a key.
 

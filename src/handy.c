@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <dirent.h>
-#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <termios.h>
 #include <sys/errno.h>
 
 #include "../config.h"
@@ -11,6 +12,7 @@
 
 extern void handy_encrypt(FILE *f, FILE *t, char *key, int core, int trace);
 extern void handy_decrypt(FILE *f, FILE *t, char *key, int core, int trace);
+extern void handy_keygen(char *password, char *key);
 
 #define OPTPARSE_IMPLEMENTATION
 #define OPTPARSE_API static
@@ -53,19 +55,76 @@ warning(const char *fmt, ...)
     va_end(ap);
 }
 
-/* Load the KEY stored in file KEYFILE. */
+/* Fallback method to get a password from terminal. */
+static void
+get_password_dumb(char *buf, size_t len, char *prompt)
+{
+    size_t passlen;
+    warning("reading key from stdin with echo");
+    fputs(prompt, stderr);
+    fflush(stderr);
+    if (!fgets(buf, len, stdin))
+        fatal("could not read password");
+    passlen = strlen(buf);
+    if (buf[passlen - 1] < ' ')
+        buf[passlen - 1] = 0;
+}
+
+/* Read a password from terminal. */
+static void
+get_password(char *buf, size_t len, char *prompt)
+{
+    int tty;
+    char newline = '\n';
+    size_t i;
+    struct termios old, new;
+
+    tty = open("/dev/tty", O_RDWR);
+    if (tty == -1)
+        get_password_dumb(buf, len, prompt);
+    else {
+        if (write(tty, prompt, strlen(prompt)) == -1)
+            fatal("error asking for key");
+        tcgetattr(tty, &old);
+        new = old;
+        new.c_lflag &= ~ECHO;
+        tcsetattr(tty, TCSANOW, &new);
+        errno = 0;
+        for (i = 0; i < len - 1 && read(tty, buf + i, 1) == 1; i++)
+            if (buf[i] == '\n' || buf[i] == '\r')
+                break;
+        buf[i] = 0;
+        tcsetattr(tty, TCSANOW, &old);
+        if (write(tty, &newline, 1) == -1)
+            fatal("error asking for passphrase");
+        close(tty);
+        if (errno)
+            fatal("could not read password from /dev/tty");
+    }
+}
+/* Load the KEY stored in file KEYFILE. If KEYFILE is null, read a password
+ * from terminal and generate a key from it. */
 static void
 load_key(char *keyfile, char *key)
 {
     FILE *in;
     size_t sz;
+    char password[HANDY_PASSWORD_MAX];
 
-    if (!(in = fopen(keyfile, "r")))
-        fatal("could not open key file '%s' -- %s",
-                keyfile, strerror(errno));
-    if ((sz = fread(key, 1, 51, in)) != 51)
-        fatal("could not read key in keyfile -- %s", keyfile);
-    fclose(in);
+    if (keyfile) {
+        if (!(in = fopen(keyfile, "r")))
+            fatal("could not open key file '%s' -- %s",
+                    keyfile, strerror(errno));
+        if ((sz = fread(key, 1, 51, in)) != 51)
+            fatal("could not read key in keyfile -- %s", keyfile);
+        fclose(in);
+    }
+    else {
+        get_password(password, HANDY_PASSWORD_MAX, "password: ");
+        if (!*password)
+            fatal("password has length zero");
+        handy_keygen(password, key);
+    }
 }
 
 int
@@ -126,11 +185,6 @@ main(int argc, char **argv)
     }
     infile = optparse_arg(options);
 
-    if (!keyfile) {
-        fprintf(stderr, "missing key file\n");
-        fprintf(stderr, "%s\n", docs_usage);
-        exit(EXIT_FAILURE);
-    }
     load_key(keyfile, key);
 
     if (infile && !(in = fopen(infile, "r")))

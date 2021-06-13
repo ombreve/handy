@@ -7,7 +7,7 @@ handy \- Handycipher
 .HP 6
 .B handy
 [\fB\-Vde\fR]
-\fB\-k\fR\ \fIfile\fR
+[\fB\-k\fR\ \fIfile\fR]
 [\fB\-o\fR\ \fIfile\fR]
 [\fB\-\-core\fR]
 [\fB\-\-help\fR]
@@ -29,7 +29,8 @@ Encrypt the input file (default).
 If no input file is given, encrypt standard input.
 .TP
 \fB\-k\fIfile\fR, \fB\-\-key\fR=\fIfile\fR
-Set the key file.
+Set the key file. If no key file is given, a password is asked and a key is
+derived from that password.
 .TP
 \fB\-o\fIfile\fR, \fB\-\-output\fR=\fIfile\fR
 Set the output file. By default output goes to standard output.
