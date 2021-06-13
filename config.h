@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 #ifndef HANDY_VERSION
-#define HANDY_VERSION 1.0
+#define HANDY_VERSION 1.1
 #endif
 
 #ifndef HANDY_PASSWORD_MAX
