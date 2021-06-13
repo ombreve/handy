@@ -52,9 +52,6 @@ This will install both the compiled binary and a manual page under `PREFIX`.
 For convenience, spaces (C Library `isspace()`) are ignored from the input.
 
 The random source is a version of [PCG](http://www.pcg-random.org).
-To debug the program, you may want to use fixed seeds for the generator
-(see src/cipher.c:init_cipher() and src/pcgrandom.h to use `pcg_seed`
-instead of `pcg_entropy`).
 
 To randomly loop through all the permutations of a set, we rank each
 permutation using the algorithm presented in
