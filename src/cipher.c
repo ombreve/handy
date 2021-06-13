@@ -648,6 +648,10 @@ decode(struct handy *cipher, char *buffer, int len, int *result)
             break;
         }
     }
+    if (!pos) /* only null characters */
+        return used;
+    if (pos == 1) /* only one non null character */
+        dir = get_column(cipher, raw[0]);
 
 end_sequence:
     Parity = 1 - Parity;
