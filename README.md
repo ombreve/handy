@@ -4,7 +4,7 @@ This program encodes files with the Handy cipher.
 
 Read the specification document by Bruce Kallick:
 [Handycipher: a Low-tech, Randomized, Symmetric-key
-Cryptosystem](https://eprint.iacr.org/2014/257.pdf)
+Cryptosystem](./handy.pdf)
 
 See the included man page for option details.
 
